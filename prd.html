@@ -1,0 +1,1208 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="真空烧结产线智能制造运营产品案例：轻量MES、WMS库存与WCS机器人调度，含PRD和可交互原型。"><link rel="stylesheet" href="assets/site.css"><title>完整 PRD｜真空烧结智能制造运营系统</title></head><body><header class="site-header"><div class="shell"><a class="logo" href="index.html">VSRCS <em>/ PRODUCT CASE</em></a><nav aria-label="作品集导航"><a href="index.html#problem">业务挑战</a><a href="index.html#solution">解决方案</a><a href="prd.html">完整 PRD</a><a class="action" href="prototype.html">交互原型 ↗</a></nav></div></header><div class="doc-main"><aside class="doc-side"><strong>📘 PRD 导航</strong><a href="#chapter-01">01  产品概述与范围</a><a href="#chapter-02">02  用户角色与核心场景</a><a href="#chapter-03">03  端到端业务流程</a><a href="#chapter-04">04  核心功能需求清单</a><a href="#chapter-05">05  信息架构与页面交互规格</a><a href="#chapter-06">06  数据模型与库存一致性</a><a href="#chapter-07">07  系统架构、接口与状态机</a><a href="#chapter-08">08  非功能与工业安全要求</a><a href="#chapter-09">09  异常场景、风控与权限</a><a href="#chapter-10">10  验收标准与测试用例</a><a href="#chapter-11">11  产品指标、分析设计与数据口径</a><a href="#chapter-12">12  版本路线图与 AI 规划</a><a href="#chapter-13">13  事实边界、设计假设与待确认事项</a><a href="#chapter-14">附录 A  与交互原型的功能映射</a><hr><a href="prototype.html">↗ 体验产品原型</a><a href="PRD.md">↓ Markdown 文档</a></aside><article class="doc"><h1>真空烧结产线 · 智能制造运营系统 PRD</h1>
+<blockquote>
+<p><strong>产品设计作品集 · v1.1</strong>　|　<strong>业务范围：轻量生产执行 / 简易 WMS / WCS 调度 / 设备协同</strong>　|　<strong>日期：2026-11-16</strong></p>
+</blockquote>
+<blockquote>
+<p><strong>公开声明：</strong> 本文基于真实工业自动化项目的业务约束进行脱敏和产品化整理。部分页面、字段、角色权限、运营指标和路线图为作品集规划，并非历史项目已上线功能。本文不包含真实设备地址、PLC 寄存器映射、数据库凭据或客户身份。</p>
+</blockquote>
+<p><a href="./index.html">← 返回作品集首页</a> · <a href="./prototype.html">查看交互原型</a> · <a href="./prd.html">在线阅读版 PRD</a></p>
+<hr/>
+<h2 id="chapter-01">01  产品概述与范围</h2>
+<h3 id="section-1">1.1 产品定位</h3>
+<p>面向离散式真空烧结产线的小规模制造运营管理系统，提供生产现场作业协同、简易WMS库存/库位管理、跨工位机器人搬运调度、设备状态集中监控与异常恢复。产品以单台复合机器人连接4台真空烧结炉，避免将现场控制逻辑割裂为多个孤立界面。</p>
+<h3 id="section-2">1.2 业务目标与成功标准</h3>
+<table>
+<thead>
+<tr>
+<th>目标</th>
+<th>业务含义</th>
+<th>衡量方式（需真实数据）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>减少人工转运</td>
+<td>工人以备料和异常处置为主，减少炉间反复搬运</td>
+<td>单任务人工干预次数 / 人工转运次数</td>
+</tr>
+<tr>
+<td>提高任务可追溯性</td>
+<td>明确每一笔生料/熟料的当前位置、目标炉及动作阶段</td>
+<td>任务状态有据可查比例、库存一致率</td>
+</tr>
+<tr>
+<td>降低重复作业风险</td>
+<td>异常、重启或PLC轮询时避免重复取放及库存双扣</td>
+<td>重复动作事故数、异常恢复成功率</td>
+</tr>
+<tr>
+<td>提高协同透明度</td>
+<td>统一查看炉位、机器人、缓存及库存状态</td>
+<td>平均故障定位时间、任务完成率</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-3">1.3 产品边界</h3>
+<p>纳入本期：生料登记与库位占用、手动指定目标炉、熟料回库/出库、车载暂存位、炉位任务、AGV/PLC/机械臂协同、报警与恢复锁、基础运营报表、角色权限与日志。</p>
+<p>暂不纳入本期：完整企业级MES工单管理、采购供应链、财务成本核算、ERP双向同步、全流程条码追踪、AI自动排产、预测性维护模型、无人工授权的自动故障恢复。</p>
+<h3 id="section-4">1.4 术语</h3>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOM</td>
+<td>制造运营管理（本方案仅覆盖轻量化执行/仓储/设备协同能力）</td>
+</tr>
+<tr>
+<td>简易WMS</td>
+<td>以库存、库位、流转和出入库记录为中心的轻量仓储模块</td>
+</tr>
+<tr>
+<td>AGV背包</td>
+<td>复合机器人车载3个物料暂存位，非独立库房货位</td>
+</tr>
+<tr>
+<td>LM6 / LM7</td>
+<td>分别为上下料交换工位和换电工位</td>
+</tr>
+<tr>
+<td>F1–F4</td>
+<td>四台烧结炉；LM1–LM4为对应炉前停靠点</td>
+</tr>
+<tr>
+<td>逻辑库存</td>
+<td>系统中记录的烧盒/批次占用与移动状态；不等于实物扫码身份认证</td>
+</tr>
+<tr>
+<td>恢复锁</td>
+<td>碰撞/通信中断等不可确定物理状态下暂停自动动作的安全业务锁</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-5">1.5 文档章节导航</h3>
+<p>02 用户与场景 · 03 业务流程 · 04 功能需求 · 05 页面及交互 · 06 数据模型 · 07 接口/状态机 · 08 非功能要求 · 09 异常与权限 · 10 验收测试 · 11 产品指标 · 12 路线图 · 13 决策与待确认事项</p>
+<h2 id="chapter-02">02  用户角色与核心场景</h2>
+<h3 id="section-6">2.1 利益相关者</h3>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>目标与关注点</th>
+<th>关键操作 / 权限</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>车间操作员</td>
+<td>快速备料、查看库存与炉状态，不增加扫码负担</td>
+<td>手选目标炉、确认入库、查看任务和报警</td>
+</tr>
+<tr>
+<td>班组长</td>
+<td>保证班次产出、统筹停机与异常</td>
+<td>审核关键库存调整、维护模式切换、恢复前现场确认</td>
+</tr>
+<tr>
+<td>设备工程师</td>
+<td>定位PLC/机器人/视觉问题，减少误操作</td>
+<td>诊断、补偿参数校核、设备维护与恢复流程</td>
+</tr>
+<tr>
+<td>生产主管</td>
+<td>掌握生产进度与问题分布</td>
+<td>看板、工单/任务统计、跨班次追溯（产品化）</td>
+</tr>
+<tr>
+<td>IT/系统管理员</td>
+<td>维护用户、备份、日志和配置</td>
+<td>角色授权、审计配置与数据备份</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-7">2.2 真实场景约束</h3>
+<ul>
+<li>4台炉共用1台复合机器人，AGV负责工位移动，机械臂负责取放，PLC管理炉状态/缓存交互，工业相机辅助定位。</li>
+<li>工人端不要求扫码入库；目标炉号在HMI中手工选择，系统维护逻辑库存和目标炉归属。</li>
+<li>车载背包以3个位为最终业务约束，不沿用最初5层假设；单机械臂/单抓取任务，调度需按资源占用串行处理。</li>
+<li>LM6为上下料交接与视觉纠偏工位；LM1–LM4炉前按各炉参数执行补偿；LM7用于人工换电。</li>
+<li>低电量参考阈值10%；存在单炉维护、全局下班、碰撞恢复锁、PLC重连与重启续作等模式。</li>
+<li>旧资料包含PLC端8个生料/8个熟料缓存信号位；这些寄存器缓存数量不直接证明真实WMS货架物理容量。原型用R1–R8/C1–C8作为演示逻辑位，部署需按现场库位重新建模。</li>
+</ul>
+<h3 id="section-8">2.3 用户故事</h3>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>作为… 我希望…</th>
+<th>价值</th>
+<th>优先级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>US01</td>
+<td>操作员：手选炉号后登记一单生料入库</td>
+<td>减少误投炉</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>US02</td>
+<td>班组长：看到四炉、AGV与库存的统一状态</td>
+<td>及时安排生产</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>US03</td>
+<td>调度系统：基于炉状态与背包空位决定取/放方案</td>
+<td>避免资源冲突</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>US04</td>
+<td>操作员：看到熟料回库并确认出库</td>
+<td>库存闭环</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>US05</td>
+<td>工程师：异常时冻结动作、核对现场后继续</td>
+<td>防撞与防重</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>US06</td>
+<td>主管：按班次看任务/报警与库位记录</td>
+<td>推动迭代</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>US07</td>
+<td>产品负责人：根据历史日志定位高频故障类型</td>
+<td>数据改善</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<h2 id="chapter-03">03  端到端业务流程</h2>
+<h3 id="section-9">3.1 生产与库存主链路</h3>
+<ol>
+<li>备料登记：操作员在HMI选择目标炉F1–F4并将生料放入指定逻辑库存位置，系统生成内部记录并检查空位。</li>
+<li>创建任务：调度读取炉状态、原料可用量、AGV背包空位、电量及维护/安全锁，计算待执行的取料、换料或卸料任务。</li>
+<li>LM6领料：AGV到达LM6，经设备握手确认取料动作完成后，库存位置从原料区迁移至车载背包位。</li>
+<li>炉前取放：前往LM1–LM4指定工位；结合视觉核对、PLC状态与机械臂动作确认完成生料装炉及/或熟料取炉。</li>
+<li>LM6回库：AGV携熟料返回；经PLC确认卸料后，库存从背包转为冷却缓存区，形成可交接记录。</li>
+<li>人工出库：确认熟料可交接后，操作员执行出库或转运；库存流水保留来源/去向/原因/时间。</li>
+<li>异常分支：碰撞、PLC失联、库位不一致、背包状态不明等情况进入恢复锁，禁止不经核对的动作重发。</li>
+</ol>
+<h3 id="section-10">3.2 作业类型规则（产品层设计，不等于PLC寄存器枚举）</h3>
+<table>
+<thead>
+<tr>
+<th>作业类型</th>
+<th>前置条件</th>
+<th>设备动作与库存变化</th>
+<th>完成条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>只装生料 / LOAD</td>
+<td>炉空闲、有对应生料</td>
+<td>原料区→背包→炉内</td>
+<td>炉内新料确认、任务结束</td>
+</tr>
+<tr>
+<td>取熟料并补生料 / SWAP</td>
+<td>炉完成、有生料、背包足够</td>
+<td>炉内熟料→背包；新料→炉；熟料→冷却</td>
+<td>双动作确认且库存一致</td>
+</tr>
+<tr>
+<td>只取熟料 / UNLOAD</td>
+<td>炉完成、无可用生料或只卸模式</td>
+<td>炉内熟料→背包→冷却</td>
+<td>炉状态及回库确认</td>
+</tr>
+<tr>
+<td>暂停/维护</td>
+<td>急停、维修、下班或恢复锁</td>
+<td>保留任务、禁止新动作</td>
+<td>现场确认后放行</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>命名提醒  本公开交互原型以 LOAD / SWAP / UNLOAD 标记三类作业。代码中的内部枚举仅用于模拟，非真实 PLC 控制码。</p>
+</blockquote>
+<h3 id="section-11">3.3 库存位置转换</h3>
+<p>逻辑位置模型：RAW（原料区）→ BAG（AGV背包）→ FURNACE（炉内）→ BAG（熟料）→ COOLING（冷却/熟料区）→ OUTBOUND（人工交接）；任何一次位置转换必须以设备动作完成或授权人工确认作为提交条件。</p>
+<h3 id="section-12">3.4 首炉与特殊模式</h3>
+<p>新批次首炉：待工艺参数确认后放行。单炉维护：该炉禁派任务，其余炉按资源条件继续。全局下班：不再接新任务，优先处理安全收尾，确保AGV物料和状态可追溯。低电量：优先安全卸载背包物料后进入LM7换电流程。</p>
+<h2 id="chapter-04">04  核心功能需求清单</h2>
+<h3 id="section-13">4.1 需求优先级定义</h3>
+<p>P0 = 生产闭环与安全必须；P1 = 提升可运营性；P2 = 数据智能化/多产线复用。所有P0操作均应具备一致性校验及可追溯的状态记录。</p>
+<table>
+<thead>
+<tr>
+<th>需求编号</th>
+<th>模块</th>
+<th>简要功能</th>
+<th>优先级</th>
+<th>证据属性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-001</td>
+<td>库存管理</td>
+<td>手动选择目标炉并登记生料</td>
+<td>P0</td>
+<td>已知业务+原型</td>
+</tr>
+<tr>
+<td>FR-002</td>
+<td>库存管理</td>
+<td>区分生料/熟料，维护物料数量、类型、位置、目标炉</td>
+<td>P0</td>
+<td>已知业务+原型</td>
+</tr>
+<tr>
+<td>FR-003</td>
+<td>库存管理</td>
+<td>原料区/冷却区/背包/炉位的逻辑占用与库存流水</td>
+<td>P0</td>
+<td>原型细化</td>
+</tr>
+<tr>
+<td>FR-004</td>
+<td>库存管理</td>
+<td>熟料人工出库并记录原因、人员、时间</td>
+<td>P1</td>
+<td>原型细化</td>
+</tr>
+<tr>
+<td>FR-005</td>
+<td>库存管理</td>
+<td>库位冲突与重复出入库校验</td>
+<td>P0</td>
+<td>原型细化</td>
+</tr>
+<tr>
+<td>FR-006</td>
+<td>生产调度</td>
+<td>按炉状态、物料及AGV容量判断任务类型</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-007</td>
+<td>生产调度</td>
+<td>同炉互斥、单AGV串行、任务阶段持久化</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-008</td>
+<td>生产调度</td>
+<td>支持新批次参数确认与班次/维护模式</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-009</td>
+<td>生产调度</td>
+<td>低电量优先卸载并转LM7换电</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-010</td>
+<td>设备管理</td>
+<td>统一展示AGV/机械臂/PLC/炉位在线和状态</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-011</td>
+<td>设备管理</td>
+<td>炉位级Z补偿参数与授权校验</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-012</td>
+<td>设备管理</td>
+<td>LM6 ArUco视觉偏差处理与异常过滤</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-013</td>
+<td>异常恢复</td>
+<td>碰撞/通信断开/库存不一致进入恢复锁</td>
+<td>P0</td>
+<td>现有工程基础</td>
+</tr>
+<tr>
+<td>FR-014</td>
+<td>异常恢复</td>
+<td>人工核对检查项与事件归档</td>
+<td>P0</td>
+<td>原型细化</td>
+</tr>
+<tr>
+<td>FR-015</td>
+<td>数据运营</td>
+<td>任务完成率、库存流水、报警频次报表</td>
+<td>P1</td>
+<td>原型细化</td>
+</tr>
+<tr>
+<td>FR-016</td>
+<td>权限审计</td>
+<td>操作员/班组长/工程师分级权限及审计</td>
+<td>P1</td>
+<td>产品化规划</td>
+</tr>
+<tr>
+<td>FR-017</td>
+<td>平台集成</td>
+<td>可选MES/ERP接口与工单主数据对接</td>
+<td>P2</td>
+<td>未来规划</td>
+</tr>
+<tr>
+<td>FR-018</td>
+<td>工业AI</td>
+<td>基于报警日志的RAG故障分析助手（只读）</td>
+<td>P2</td>
+<td>未来规划</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-14">4.2 FR-001 ～ FR-005：简易WMS详细规则</h3>
+<ul>
+<li>库存对象：以一份可搬运的烧盒/批次容器为最小逻辑单位；仅在原型演示中生成内部物料ID，不能推断实物具有唯一条码。</li>
+<li>登记字段：目标炉号（必填，人工选择）、库位（必填）、物料类型（入库固定为生料）、入库时间、记录人；批次号/工单号为后续可选项。</li>
+<li>库存状态：AVAILABLE（可用）、RESERVED（已分配待领）、IN_TRANSIT（车载）、IN_FURNACE（炉内）、COOLING（熟料区）、OUTBOUND（已出库）、EXCEPTION（待核对）。</li>
+<li>出入库不允许负库存：任何取料均检查当前占用、目标库位可用、任务版本；人工更正必须通过授权和盘点记录，不直接覆盖历史流水。</li>
+<li>库位配置：仓储位数量由现场配置，原型 R1–R8、C1–C8仅作为演示映射；车载B1–B3为项目确认的实际容量约束。</li>
+<li>数据一致性：库存当前表与库存事件流水应同一数据库事务提交；通信失败时记录PENDING_CONFIRM并阻断下一动作，不能假定机械已完成。</li>
+</ul>
+<h3 id="section-15">4.3 FR-006 ～ FR-009：调度与任务管理详细规则</h3>
+<ul>
+<li>同一炉位最多存在一条未完成的操作性任务；AGV同一时刻仅执行一条活动任务；按照炉完成状态、目标炉库存和路径约束调度。</li>
+<li>任务必须包含task_id、目标炉、作业类型、优先级、创建时间、阶段、执行状态、原料位置、背包位置及最近确认步骤。</li>
+<li>对已有取放动作采用“命令序号+阶段+设备应答”去重；不允许因为重连或PLC电平保持而重复下发相同物理动作。</li>
+<li>电量&lt;10%时拒绝新正常任务，保留当前物料安全策略；换电状态落盘并确保重新启动前检查位置、背包、PLC及急停。</li>
+<li>停机/维护、首炉参数未确认、冷却区满、AGV背包满时，系统应提示阻断原因而不是无限重试。</li>
+</ul>
+<h3 id="section-16">4.4 FR-010 ～ FR-014：设备与异常</h3>
+<ul>
+<li>监控维度：F1–F4炉状态（空闲、烧结中、完成、维修）、AGV位置和电量、机械臂状态、PLC连接质量、视觉状态、任务阶段。</li>
+<li>LM6进行XY/Rz偏差识别；LM1–LM4按炉位配置使用Z轴补偿。视觉标识错误、置信区间异常、碰撞或物理状态不明时不得自行放行动作。</li>
+<li>恢复锁必须记录发生原因、设备位置、最后确认动作、背包/炉内/库存快照、人工确认人与时间；用户界面应明确“解锁≠已经完成物理恢复”。</li>
+<li>参数修改需至少角色授权、输入范围验证、参数生效时间/版本和回滚；本原型只模拟这些过程，不写入控制器。</li>
+</ul>
+<h2 id="chapter-05">05  信息架构与页面交互规格</h2>
+<p>原型采用“运营总览—WMS库存—调度任务—设备管理—异常恢复—运营报表—参数与规则”七个一级导航。真实项目具有Web管理界面；此处提供的是独立制作的作品集静态原型，并非现场已部署系统或历史生产代码。</p>
+<table>
+<thead>
+<tr>
+<th>页面</th>
+<th>主要信息</th>
+<th>核心交互</th>
+<th>空/异常状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P01 运营总览</td>
+<td>库存概览、炉状态、当前任务、AGV位置/电量、最近事件</td>
+<td>新建任务、执行演示、跳转模块</td>
+<td>无任务、恢复锁、高报警</td>
+</tr>
+<tr>
+<td>P02 WMS库存</td>
+<td>原料位R、熟料位C、车载B、炉内物料、流水</td>
+<td>手动入库、查看库位、熟料出库、导出CSV</td>
+<td>满位、空位、位置冲突</td>
+</tr>
+<tr>
+<td>P03 生产调度</td>
+<td>任务队列、类型、阶段、作业约束</td>
+<td>创建任务、模拟阶段推进</td>
+<td>炉维修、重复派单、背包不足</td>
+</tr>
+<tr>
+<td>P04 设备管理</td>
+<td>四炉状态、AGV电量、LM1–LM7、补偿</td>
+<td>查看炉详情、模拟完成/换电</td>
+<td>失联、维护、低电量</td>
+</tr>
+<tr>
+<td>P05 异常恢复</td>
+<td>报警清单、锁状态、核对项、关联任务</td>
+<td>模拟异常、权限核验、恢复确认</td>
+<td>未完成核对不允许恢复</td>
+</tr>
+<tr>
+<td>P06 运营报表</td>
+<td>库存分布、任务统计、报警统计、流水</td>
+<td>查询/导出CSV</td>
+<td>缺少真实OEE采样提示</td>
+</tr>
+<tr>
+<td>P07 参数与规则</td>
+<td>Z补偿、模式、阈值、原型边界</td>
+<td>角色校验、参数演示编辑</td>
+<td>越界参数、权限不足</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-17">5.1 关键交互 I：手动入库</h3>
+<p>入口：WMS &gt; 人工生料入库。弹窗依次显示目标炉号（F1–F4）、原料空位列表、逻辑物料说明；用户确认后生成库存记录与入库流水。校验：满仓不可提交、库位被占不可覆盖、恢复锁禁止修改、不要求扫码。成功反馈应显示位置与目标炉。</p>
+<h3 id="section-18">5.2 关键交互 II：创建及推进调度任务</h3>
+<p>入口：调度任务 &gt; 生成作业任务。选择目标炉后系统计算作业类型并解释约束；新任务入队等待。原型“执行下一步”依次演示：LM6领料→炉前动作→LM6熟料回库。每步更新任务阶段和库存位置，并记录事件；真实生产必须由设备回执触发事务提交。</p>
+<h3 id="section-19">5.3 关键交互 III：异常锁定与恢复</h3>
+<p>入口：异常与恢复 &gt; 模拟故障。触发后界面突出安全锁，禁用推进按钮。使用班组长/工程师角色，完成三项核对（安全状态/实物一致/PLC任务阶段），才能恢复演示。操作员角色仅可查看，不可解锁。</p>
+<h3 id="section-20">5.4 状态文案标准</h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>正向反馈</th>
+<th>阻断提示</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>入库</td>
+<td>入库成功；已占用R#；目标F#</td>
+<td>库位已满 / 库位被占用 / 恢复锁生效</td>
+</tr>
+<tr>
+<td>派单</td>
+<td>任务 T-xxxx 已加入队列</td>
+<td>炉维护中 / 无匹配生料 / 同炉有待执行任务</td>
+</tr>
+<tr>
+<td>作业推进</td>
+<td>阶段完成并写入流水</td>
+<td>背包不足 / 电量过低 / 冷却位不足</td>
+</tr>
+<tr>
+<td>恢复</td>
+<td>人工确认通过，继续当前任务</td>
+<td>请完成所有核对项 / 当前角色无权限</td>
+</tr>
+</tbody>
+</table>
+<h2 id="chapter-06">06  数据模型与库存一致性</h2>
+<h3 id="section-21">6.1 领域对象</h3>
+<table>
+<thead>
+<tr>
+<th>实体 / 表（建议）</th>
+<th>关键字段</th>
+<th>约束</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>material_unit</td>
+<td>material_id, kind, target_furnace, batch_id?, created_at</td>
+<td>内部逻辑ID，可无扫码；kind生/熟</td>
+</tr>
+<tr>
+<td>location</td>
+<td>location_id, location_type, capacity, enabled</td>
+<td>RAW/COOLING/BAG/FURNACE；可配置</td>
+</tr>
+<tr>
+<td>inventory_current</td>
+<td>material_id, location_id, status, updated_at, row_version</td>
+<td>material唯一当前位置；乐观锁防双改</td>
+</tr>
+<tr>
+<td>inventory_event</td>
+<td>event_id, material_id, from, to, action, task_id, operator, at</td>
+<td>追加流水不可覆盖；关联任务</td>
+</tr>
+<tr>
+<td>production_task</td>
+<td>task_id, target_furnace, type, state, phase, created_at, finished_at</td>
+<td>任务可恢复、阶段单调推进</td>
+</tr>
+<tr>
+<td>equipment_status</td>
+<td>equipment_id, last_seen, state, error_code, data_version</td>
+<td>PLC/AGV状态需带时间戳</td>
+</tr>
+<tr>
+<td>alarm_event</td>
+<td>alarm_id, task_id, reason, phase_snapshot, status, assignee</td>
+<td>异常锁及人工处置审计</td>
+</tr>
+<tr>
+<td>parameter_history</td>
+<td>key, target, old, new, approver, applied_at</td>
+<td>Z补偿等参数变更版本化</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-22">6.2 数据质量与一致性策略</h3>
+<ul>
+<li>库存变更采用事件驱动的事务边界：操作开始只设置预留状态，设备动作确认后才能变更当前位置；不可将“已发送命令”当成“物料已移动”。</li>
+<li>单份物料不得同时出现在两个有效库位；同一库位容量为1时不能有两份有效物料；炉状态与炉内物料是否存在须一致。</li>
+<li>恢复期间以现场实物为最终核验依据，软件可保存冲突快照并要求人工签核；不能以自动对账代替机械臂安全确认。</li>
+<li>根据已有SQLite任务持久化经验可采用SQLite作轻量单机存储；如果扩展多客户端/多产线，应评估服务端数据库和事务模型。</li>
+<li>演示原型使用浏览器localStorage，不含任何真实 PLC/AGV 接口、远程数据库或账号系统；数据不是生产级持久化。</li>
+</ul>
+<h3 id="section-23">6.3 字段示例（仅做产品规范）</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>示例</th>
+<th>业务规则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>material_id</td>
+<td>M-001</td>
+<td>系统内部生成；不要求实物扫码</td>
+</tr>
+<tr>
+<td>kind</td>
+<td>RAW / COOKED</td>
+<td>仅通过确认为熟料的工序转换</td>
+</tr>
+<tr>
+<td>target_furnace</td>
+<td>F1</td>
+<td>操作员/HMI选择，不可自动猜测</td>
+</tr>
+<tr>
+<td>location_id</td>
+<td>R1 / B2 / F3 / C7</td>
+<td>任一时点唯一有效位置</td>
+</tr>
+<tr>
+<td>phase</td>
+<td>READY / PICKED / AT_FURNACE / RETURNED</td>
+<td>关键阶段需与设备回执一致</td>
+</tr>
+<tr>
+<td>recovery_lock</td>
+<td>0 / 1</td>
+<td>置1时禁止新危险动作</td>
+</tr>
+</tbody>
+</table>
+<h2 id="chapter-07">07  系统架构、接口与状态机</h2>
+<h3 id="section-24">7.1 系统分层</h3>
+<p>表现层：Web管理端/HMI（真实项目工程基础），本作品集单HTML页面作为交互原型；业务层：WMS库存、任务调度、设备管理、告警与参数；集成层：AGV导航SDK、机械臂控制接口、PLC Modbus TCP、工业相机；数据层：SQLite任务与库存状态持久化。</p>
+<h3 id="section-25">7.2 设备接口与责任边界</h3>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>方向与作用</th>
+<th>重点约束</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PLC Modbus TCP</td>
+<td>读取炉状态/急停/缓存；写入AGV与PLC握手信号</td>
+<td>IP/端口及寄存器映射以现场协议为准</td>
+</tr>
+<tr>
+<td>AGV导航</td>
+<td>调度层→AGV站点任务；AGV→位置/电量/到位</td>
+<td>工位LM1–LM4、LM6、LM7</td>
+</tr>
+<tr>
+<td>机械臂动作接口</td>
+<td>调度层下发受控动作，读取结果</td>
+<td>与安全互锁和机械臂状态核对</td>
+</tr>
+<tr>
+<td>工业相机/ArUco</td>
+<td>LM6二维码确认与XY/Rz测量</td>
+<td>视觉异常拒绝盲目纠偏；非深度学习AI</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>存储任务阶段、背包位置、库存与告警</td>
+<td>断电完整性、定期备份、恢复核对</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-26">7.3 PLC 协议已知示例与限制</h3>
+<p>已有工程资料中，PLC下发急停、炉位状态等寄存器，调度侧回写车载暂存位信息等。示例应遵循现场已确认的完整点表，并区分“命令、状态、应答和超时”。本PRD不自行创造新寄存器地址，也不把原型里的 LOAD/SWAP/UNLOAD 作业别名写为PLC真实控制码。</p>
+<h3 id="section-27">7.4 状态机</h3>
+<table>
+<thead>
+<tr>
+<th>对象</th>
+<th>状态 / 转换</th>
+<th>非法/异常转换应对</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>炉位</td>
+<td>IDLE→RUNNING→DONE→IDLE；任一允许入口→MAINTENANCE</td>
+<td>烧结中禁止重复装炉；维护中禁派单</td>
+</tr>
+<tr>
+<td>调度任务</td>
+<td>PENDING→RUNNING(分阶段)→DONE；RUNNING→PAUSED→RUNNING</td>
+<td>不可逆动作确认前不推进阶段</td>
+</tr>
+<tr>
+<td>库存</td>
+<td>AVAILABLE→RESERVED→IN_TRANSIT→IN_FURNACE / COOLING→OUTBOUND</td>
+<td>冲突转EXCEPTION并锁定相关任务</td>
+</tr>
+<tr>
+<td>设备恢复</td>
+<td>READY→RECOVERY_LOCK→MANUAL_CHECK→READY</td>
+<td>未完成现场核验禁止解锁</td>
+</tr>
+<tr>
+<td>换电</td>
+<td>NORMAL→UNLOAD_ONLY→BATTERY_SWAP_WAIT→STARTUP_CHECK→READY</td>
+<td>不允许带未知物料直接正常派单</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-28">7.5 幂等控制与断点续作</h3>
+<p>动作调用必须携带task_id + phase_id + command_seq。对同一阶段重复请求返回已处理结果，不得再次触发机械动作；PLC重连后，先读取设备状态并核对“命令是否已被物理执行”，无法确认则锁定待人工复核。数据库需在危险动作前记录意图，设备完成后原子确认业务状态。</p>
+<h2 id="chapter-08">08  非功能与工业安全要求</h2>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>指标与要求</th>
+<th>验证方法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可用性</td>
+<td>关键业务操作可通过上位机完成；网络中断须显式显示失联状态</td>
+<td>模拟掉线/重连验证状态回显</td>
+</tr>
+<tr>
+<td>可靠性</td>
+<td>任务/库存状态断电可恢复；关键阶段不能丢失或重复执行</td>
+<td>中断注入、重启恢复测试</td>
+</tr>
+<tr>
+<td>数据一致性</td>
+<td>单物料单有效库位、单炉单活动任务、串行AGV占用</td>
+<td>冲突与并发用例验证</td>
+</tr>
+<tr>
+<td>操作安全</td>
+<td>急停和现场控制器互锁优先于软件；恢复锁期间禁动作</td>
+<td>硬件安全验收+软件门禁测试</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>单台AGV与4台炉规模；看板和任务查询须满足现场响应体验</td>
+<td>在目标硬件上记录响应时间后定阈值</td>
+</tr>
+<tr>
+<td>追溯与审计</td>
+<td>库存/任务/告警/参数变更保留人员、时间、原因</td>
+<td>抽取记录重建单物料流转</td>
+</tr>
+<tr>
+<td>权限</td>
+<td>操作员与工程师/班组长关键控制权分离</td>
+<td>越权与角色切换测试</td>
+</tr>
+<tr>
+<td>灾备</td>
+<td>SQLite备份、完整性校验、数据库损坏应急恢复</td>
+<td>恢复演练与数据核对</td>
+</tr>
+<tr>
+<td>扩展性</td>
+<td>新增炉位和库位尽量通过配置适配，不能破坏既有状态机</td>
+<td>新增配置回归测试</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>生产安全红线  本作品集原型从不连接实际设备，也不允许“AI自动复位/自动解锁”；真正的设备安全必须由安全PLC、机器人控制器和现场人员共同保证。</p>
+</blockquote>
+<h2 id="chapter-09">09  异常场景、风控与权限</h2>
+<table>
+<thead>
+<tr>
+<th>异常ID / 情形</th>
+<th>系统动作</th>
+<th>人工处理 / 验证</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EX01 PLC通讯中断</td>
+<td>暂停相关任务；保存最近阶段；标记设备状态未知</td>
+<td>恢复链路后对照PLC状态和实物</td>
+</tr>
+<tr>
+<td>EX02 AGV位置未知</td>
+<td>禁止移动与取放；记录最后确认站点</td>
+<td>确认站点/导航恢复后放行</td>
+</tr>
+<tr>
+<td>EX03 机械臂碰撞</td>
+<td>触发恢复锁、记录抓取状态</td>
+<td>确认安全位置与抓手/物料后恢复</td>
+</tr>
+<tr>
+<td>EX04 ArUco识别失败</td>
+<td>停止纠偏和后续动作</td>
+<td>清洁标识、复拍并核对ID</td>
+</tr>
+<tr>
+<td>EX05 背包/库位不一致</td>
+<td>冻结库存流转，保留冲突快照</td>
+<td>盘点实物，由授权人修正</td>
+</tr>
+<tr>
+<td>EX06 炉维护或状态异常</td>
+<td>拒绝目标炉派单；不影响无关炉</td>
+<td>设备工程师确认恢复生产</td>
+</tr>
+<tr>
+<td>EX07 低电量&lt;10%</td>
+<td>停止接新正常任务，先安全卸载</td>
+<td>去LM7换电，开机自检</td>
+</tr>
+<tr>
+<td>EX08 数据库损坏</td>
+<td>停止自动运行并报警</td>
+<td>验证备份、恢复、库存对账</td>
+</tr>
+<tr>
+<td>EX09 冷却区满</td>
+<td>熟料回库任务待处置，不做无确认卸料</td>
+<td>清理库存或确认新的允许位置</td>
+</tr>
+<tr>
+<td>EX10 重复命令/PLC电平保持</td>
+<td>按task_id/phase去重并阻断二次执行</td>
+<td>核对是否已完成物理动作</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-29">9.1 角色权限矩阵</h3>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>操作员</th>
+<th>班组长</th>
+<th>设备工程师</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>查看状态/库存</td>
+<td>允许</td>
+<td>允许</td>
+<td>允许</td>
+</tr>
+<tr>
+<td>入库/出库登记</td>
+<td>允许（按规程）</td>
+<td>允许</td>
+<td>允许</td>
+</tr>
+<tr>
+<td>生成生产任务</td>
+<td>允许（受状态校验）</td>
+<td>允许</td>
+<td>允许</td>
+</tr>
+<tr>
+<td>确认异常现场核查</td>
+<td>不可单独解锁</td>
+<td>允许（授权后）</td>
+<td>允许（授权后）</td>
+</tr>
+<tr>
+<td>维护模式切换</td>
+<td>不可</td>
+<td>允许</td>
+<td>允许</td>
+</tr>
+<tr>
+<td>补偿参数修改</td>
+<td>不可</td>
+<td>审批/查看</td>
+<td>允许（需复核）</td>
+</tr>
+<tr>
+<td>数据库修复/协议配置</td>
+<td>不可</td>
+<td>不可</td>
+<td>受控维护</td>
+</tr>
+</tbody>
+</table>
+<h2 id="chapter-10">10  验收标准与测试用例</h2>
+<p>以下验收用例是产品设计层面的建议，不代表历史项目已经通过同样测试。生产验收必须使用真实PLC、AGV、机械臂与现场设备进行联合验证。</p>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>用例</th>
+<th>触发条件</th>
+<th>预期结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AT01</td>
+<td>手动入库</td>
+<td>选择F2与空库位</td>
+<td>新库存可见、生成流水、不要求扫码</td>
+</tr>
+<tr>
+<td>AT02</td>
+<td>库位已满</td>
+<td>占满所有演示原料位</td>
+<td>阻断入库，给出原因</td>
+</tr>
+<tr>
+<td>AT03</td>
+<td>重复入库</td>
+<td>使用已占用库位</td>
+<td>禁止覆盖与双计数</td>
+</tr>
+<tr>
+<td>AT04</td>
+<td>只装</td>
+<td>空炉+对应生料</td>
+<td>任务可创建并按阶段流转</td>
+</tr>
+<tr>
+<td>AT05</td>
+<td>换料</td>
+<td>已完成炉+新生料+空背包</td>
+<td>熟料先取、新料装入、回库闭环</td>
+</tr>
+<tr>
+<td>AT06</td>
+<td>只卸</td>
+<td>已完成炉+无新生料</td>
+<td>只执行熟料回库</td>
+</tr>
+<tr>
+<td>AT07</td>
+<td>同炉重复派单</td>
+<td>同炉已有待执行任务</td>
+<td>重复任务被拒绝</td>
+</tr>
+<tr>
+<td>AT08</td>
+<td>炉维护</td>
+<td>选维护中的炉</td>
+<td>拒绝派单，提示维护</td>
+</tr>
+<tr>
+<td>AT09</td>
+<td>背包容量不足</td>
+<td>B1–B3占用不足目标任务预留</td>
+<td>禁止启动，提示缺位</td>
+</tr>
+<tr>
+<td>AT10</td>
+<td>低电量</td>
+<td>电量降至低于10%</td>
+<td>阻断新正常任务并显示换电策略</td>
+</tr>
+<tr>
+<td>AT11</td>
+<td>模拟机械臂异常</td>
+<td>活动任务时触发报警</td>
+<td>冻结进度，事件可追溯</td>
+</tr>
+<tr>
+<td>AT12</td>
+<td>操作员解锁</td>
+<td>在操作员角色发起恢复</td>
+<td>权限拒绝</td>
+</tr>
+<tr>
+<td>AT13</td>
+<td>未完成核对</td>
+<td>班组长未勾选全部核对项</td>
+<td>恢复按钮不放行</td>
+</tr>
+<tr>
+<td>AT14</td>
+<td>完成核对</td>
+<td>授权角色勾选并确认</td>
+<td>可恢复当前阶段，不重置已确认步骤</td>
+</tr>
+<tr>
+<td>AT15</td>
+<td>熟料出库</td>
+<td>在冷却位执行出库</td>
+<td>库存减少，流水保留原因</td>
+</tr>
+<tr>
+<td>AT16</td>
+<td>数据重置</td>
+<td>点击重置演示</td>
+<td>恢复示例状态，不影响外部设备</td>
+</tr>
+<tr>
+<td>AT17</td>
+<td>导出流水</td>
+<td>点击CSV导出</td>
+<td>包含时间、物料ID、类型、来源、去向、备注</td>
+</tr>
+<tr>
+<td>AT18</td>
+<td>参数越界</td>
+<td>输入无效Z补偿</td>
+<td>不接受修改</td>
+</tr>
+<tr>
+<td>AT19</td>
+<td>重启与断点</td>
+<td>中断设备与软件（生产验证）</td>
+<td>不重复物理动作，保留待核对阶段</td>
+</tr>
+<tr>
+<td>AT20</td>
+<td>库存一致性</td>
+<td>模拟动作确认失败</td>
+<td>源/目标不能出现双库存</td>
+</tr>
+</tbody>
+</table>
+<h2 id="chapter-11">11  产品指标、分析设计与数据口径</h2>
+<p>KPI分为“原型可计算”和“需真实采集”两类。原型计算值只反映内置示例数据，不可当作实际项目交付KPI。</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>定义 / 公式</th>
+<th>数据源</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>库存占用率</td>
+<td>已占用库位数 / 可用库位数</td>
+<td>inventory_current / location</td>
+<td>原型可计算</td>
+</tr>
+<tr>
+<td>物料流转次数</td>
+<td>库存位置变更事件数</td>
+<td>inventory_event</td>
+<td>原型可计算</td>
+</tr>
+<tr>
+<td>任务完成率</td>
+<td>DONE / (DONE+FAILED)；处理中不计入</td>
+<td>production_task</td>
+<td>原型可计算</td>
+</tr>
+<tr>
+<td>异常发生率</td>
+<td>报警次数 / 已结束任务数</td>
+<td>alarm_event + task</td>
+<td>接入真实数据</td>
+</tr>
+<tr>
+<td>平均恢复时长</td>
+<td>恢复确认时间 − 异常发生时间</td>
+<td>alarm_event</td>
+<td>需真实采集</td>
+</tr>
+<tr>
+<td>设备稼动率</td>
+<td>实际运行时间 / 计划运行时间</td>
+<td>设备采样、计划时段</td>
+<td>需真实采集</td>
+</tr>
+<tr>
+<td>OEE</td>
+<td>可用率×性能×良品率</td>
+<td>设备/工单/质检</td>
+<td>未来规划</td>
+</tr>
+<tr>
+<td>库存一致率</td>
+<td>盘点一致库位 / 已核验库位</td>
+<td>人工盘点表</td>
+<td>未来规划</td>
+</tr>
+<tr>
+<td>平均转运周期</td>
+<td>任务完成时间 − 创建时间</td>
+<td>production_task</td>
+<td>需真实采集</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-30">11.1 数据运营机制（产品化建议）</h3>
+<p>每周收集前10高频报警与非正常暂停原因；按炉位/班次/物料类型分析调度延误；将需求反馈进入统一需求池，并以业务价值、频率、风险、开发成本评分形成月度迭代计划。AI模块效果应另设准确率/误报率/覆盖率等质量基线，无法以“上线大模型”代替价值评价。</p>
+<h2 id="chapter-12">12  版本路线图与 AI 规划</h2>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>目标</th>
+<th>主要交付</th>
+<th>验收门槛</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V1.0 业务闭环</td>
+<td>简易WMS+调度+可视化+异常恢复</td>
+<td>库存位置、任务状态、设备状态、工位流程</td>
+<td>可演示核心闭环与异常流程</td>
+</tr>
+<tr>
+<td>V1.1 运营规范化</td>
+<td>补齐角色、数据审计与业务报表</td>
+<td>权限矩阵、CSV导出、变更日志、异常原因分类</td>
+<td>数据一致性与权限用例通过</td>
+</tr>
+<tr>
+<td>V1.2 可配置化</td>
+<td>多批次/库位/炉位配置与可维护性</td>
+<td>配置中心、阈值版本、批次与工单可选字段</td>
+<td>配置回归测试通过</td>
+</tr>
+<tr>
+<td>V2.0 平台联动</td>
+<td>与企业MES/ERP更完整衔接</td>
+<td>工单同步、批次追溯、服务端API、统一身份</td>
+<td>接口契约与异常一致性通过</td>
+</tr>
+<tr>
+<td>V2.1 AI辅助运维</td>
+<td>从故障记录中生成检索式分析建议</td>
+<td>RAG知识库、只读设备工具、人工审核建议</td>
+<td>检索可追溯，禁止自动控制危险设备</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-31">12.1 AI功能设计原则</h3>
+<p>“AI辅助运维”是未来产品设想，不是现有真空烧结项目已实现功能。建议先以历史报警、维护手册、PLC点表建立RAG只读知识库；Agent可调用只读的任务/报警/库存查询工具，输出故障候选原因及引用来源。不得直接下发机械运动、急停解除或恢复锁清除指令。</p>
+<h3 id="section-32">12.2 价值优先级</h3>
+<p>先解决库存准确、任务协同与异常恢复的确定性问题；在沉淀完整的设备日志、运维SOP及异常样本后，再评估AI模型可带来的故障定位提升。对于硬互锁、PLC同步和机械动作决策，优先使用可验证的状态机和规则引擎，不引入随机生成式控制。</p>
+<h2 id="chapter-13">13  事实边界、设计假设与待确认事项</h2>
+<h3 id="section-33">13.1 三类证据边界</h3>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>包含内容</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>实际项目背景</td>
+<td>4炉/单复合机器人/3车载位/LM6与LM7/Web管理端/SQLite/视觉纠偏/简易WMS库存管理/PLC通讯/恢复锁等</td>
+<td></td>
+</tr>
+<tr>
+<td>本次 PRD 产品化设计</td>
+<td>7页面信息架构、R1–R8/C1–C8演示库位、出库流水、KPI展示、角色校验、需求池框架</td>
+<td></td>
+</tr>
+<tr>
+<td>未来规划</td>
+<td>完整MES/ERP对接、企业级权限、标准化MOM扩展、RAG/Agent辅助运维</td>
+<td>“这是下一版本可行方案，尚未宣称已上线。”</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-34">13.2 待客户/现场再次确认的设计问题</h3>
+<ul>
+<li>简易WMS的实际物理货位数量、成品库位与PLC缓存位对应关系；现场“立体库”是否存在独立库位编码及人工库存盘点流程。</li>
+<li>每个烧盒的物理追溯粒度：容器级、批次级、工单级；是否有既存标识或仅内部逻辑计数。</li>
+<li>熟料出炉后冷却时间、冷却位占用规则、是否允许提前人工出库。</li>
+<li>各炉状态位与实际生产启动/完成信号的精确定义，是否存在例外工艺流程。</li>
+<li>现场历史业务中故障提示类型与设备动作指令的分类方式；本PRD三类作业统一用LOAD/SWAP/UNLOAD避免协议混淆。</li>
+<li>项目历史交付时的WMS界面、数据库表结构、实际统计指标是否保留，可用于把原型从“设计案例”升级成“交付证据”。</li>
+</ul>
+
+<h2 id="chapter-14">附录 A  与交互原型的功能映射</h2>
+<table>
+<thead>
+<tr>
+<th>原型导航</th>
+<th>对应本PRD</th>
+<th>演示步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>运营总览</td>
+<td>FR-006/010/015</td>
+<td>查看炉态、库存与任务信息</td>
+</tr>
+<tr>
+<td>WMS库存</td>
+<td>FR-001～005</td>
+<td>人工入库 → 点击库位 → 熟料出库</td>
+</tr>
+<tr>
+<td>生产与调度</td>
+<td>FR-006～009</td>
+<td>新建任务 → 逐步执行 → 库存迁移</td>
+</tr>
+<tr>
+<td>设备管理</td>
+<td>FR-010～012</td>
+<td>查看炉详情 → 模拟烧结完成/换电</td>
+</tr>
+<tr>
+<td>报警与恢复</td>
+<td>FR-013～014/016</td>
+<td>触发报警 → 权限核对 → 恢复</td>
+</tr>
+<tr>
+<td>运营分析</td>
+<td>FR-015</td>
+<td>观察库存分布与导出流水</td>
+</tr>
+<tr>
+<td>参数与规则</td>
+<td>FR-011/016</td>
+<td>查看补偿/阈值与角色差异</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>交付说明  对应可交互HTML为离线单文件，浏览器打开即用；模拟数据只保存在当前浏览器，不与真实PLC、数据库、AGV或机械臂通信。</p>
+</blockquote>
+<hr/>
+<p><strong>文档性质</strong>：产品设计作品集，不含生产控制能力。真实交付、补充设计、规划功能均请以对应章节的证据分类为准。</p>
+</article></div><footer class="footer"><div class="shell"><span>公开 PRD · 脱敏产品化案例 · 仅供招聘作品集展示</span><span><a href="index.html">首页</a>　·　<a href="prototype.html">交互原型</a></span></div></footer></body></html>
